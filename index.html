@@ -187,18 +187,27 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================================
-        // 🚨 여기에 본인의 Firebase 설정값을 다시 정확히 넣어주세요.
-        // ==========================================================
-        const firebaseConfig = {
-             apiKey: "AIzaSyAlp-PpxgxPBXj0Ek1H-b52GjwiU8KyD5A",
+      // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAlp-PpxgxPBXj0Ek1H-b52GjwiU8KyD5A",
   authDomain: "onnurichurch-icn-youth.firebaseapp.com",
   projectId: "onnurichurch-icn-youth",
   storageBucket: "onnurichurch-icn-youth.firebasestorage.app",
   messagingSenderId: "89074216999",
   appId: "1:89074216999:web:1798e414726b1e4af75e02",
   measurementId: "G-L3VMY8M75B"
-        };
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
         // ==========================================================
 
         const app = initializeApp(firebaseConfig);
