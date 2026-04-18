@@ -3,22 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>온누리교회(인천) 유치부 출결 관리</title>
+    <title>인천온누리 유치2부 출결관리</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;600;800&display=swap');
         body { font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .header-gradient {
-            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
-        }
+        .header-gradient { background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); }
         .attendance-card { transition: transform 0.1s ease, box-shadow 0.2s ease; }
         .attendance-card:active { transform: scale(0.97); }
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.9); display: flex; flex-direction: column; justify-content: center;
-            align-items: center; z-index: 9999;
+            background: rgba(255,255,255,0.98); display: flex; flex-direction: column; justify-content: center;
+            align-items: center; z-index: 9999; display: none;
         }
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -27,22 +25,20 @@
             backdrop-filter: blur(4px);
         }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 select-none">
 
-    <!-- 로딩 스크린 -->
     <div id="loading-overlay">
         <div class="relative w-16 h-16">
             <div class="absolute top-0 left-0 w-full h-full border-4 border-blue-100 rounded-full"></div>
             <div class="absolute top-0 left-0 w-full h-full border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
         </div>
-        <p class="mt-4 text-sm font-bold text-slate-500">Firebase 데이터 동기화 중...</p>
+        <p class="mt-4 text-sm font-bold text-slate-500" id="loading-text">명단 데이터를 분석 중입니다...</p>
     </div>
 
     <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col relative bg-white shadow-2xl border-x border-slate-100">
-        <!-- 상단 헤더 -->
         <header class="sticky top-0 z-40 header-gradient text-white pt-10 pb-5 px-6 shadow-md rounded-b-[2rem]">
             <div class="flex justify-between items-center mb-1">
                 <button id="backBtn" class="invisible w-10 h-10 flex items-center justify-center -ml-2 rounded-full hover:bg-white/10" onclick="goBack()">
@@ -50,7 +46,7 @@
                 </button>
                 <div class="text-center">
                     <h1 class="text-[10px] font-bold opacity-70 tracking-[0.3em] uppercase mb-0.5">Onnuri ICN Youth</h1>
-                    <p class="text-lg font-black tracking-tight" id="headerTitle">출결 관리 시스템</p>
+                    <p class="text-lg font-black tracking-tight">유치2부 출결관리</p>
                 </div>
                 <button class="w-10 h-10 flex items-center justify-center -mr-2 rounded-full hover:bg-white/10" onclick="location.reload()">
                     <i class="fa-solid fa-rotate-right"></i>
@@ -58,86 +54,58 @@
             </div>
         </header>
 
-        <!-- 메인 콘텐츠 영역 -->
         <main class="flex-1 overflow-y-auto custom-scrollbar px-5 py-6 pb-28">
-            
-            <!-- VIEW: 대시보드 -->
             <section id="view-dashboard" class="space-y-6">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-extrabold text-slate-800">현황 리포트 <span id="displayDate" class="ml-2 text-xs text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-full"></span></h2>
+                <div class="flex justify-between items-center px-1">
+                    <h2 class="text-xl font-extrabold text-slate-800">전체 현황 <span id="displayDate" class="ml-2 text-xs text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-full"></span></h2>
                 </div>
 
-                <!-- 통계 카드 -->
                 <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-                    <div class="grid grid-cols-3 bg-slate-50 py-3 px-4 text-[10px] font-black text-slate-400 text-center uppercase tracking-widest border-b border-slate-100">
-                        <div>구분</div><div>1부 예배</div><div>2부 예배</div>
+                    <div class="grid grid-cols-2 bg-slate-50 py-3 px-4 text-[10px] font-black text-slate-400 text-center uppercase tracking-widest border-b border-slate-100">
+                        <div>구분</div><div>2부 실시간 인원</div>
                     </div>
-                    
-                    <div class="divide-y divide-slate-50">
-                        <div id="stat-rows-container">
-                            <!-- JS에서 렌더링 -->
-                        </div>
-                    </div>
+                    <div class="divide-y divide-slate-50" id="stat-rows-container"></div>
                 </div>
 
                 <div class="space-y-4">
                     <h3 class="font-bold text-slate-800 ml-1 flex items-center gap-2">
-                        <i class="fa-solid fa-hand-pointer text-blue-500"></i> 예배 선택
+                        <i class="fa-solid fa-school text-blue-500 text-sm"></i> 어린이 학급 목록
                     </h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <button onclick="navigateTo('part', '1부')" class="attendance-card bg-indigo-600 text-white rounded-3xl p-5 shadow-lg shadow-indigo-100 text-left relative overflow-hidden">
-                            <i class="fa-solid fa-sun absolute -right-4 -top-4 text-6xl opacity-10"></i>
-                            <div class="relative z-10">
-                                <p class="text-[10px] font-bold opacity-70 uppercase tracking-widest mb-1">Morning Service</p>
-                                <p class="text-xl font-black">1부 예배</p>
-                                <p class="text-[10px] mt-4 font-medium px-2 py-0.5 bg-white/20 rounded-full inline-block">09:00 AM</p>
-                            </div>
-                        </button>
-                        <button onclick="navigateTo('part', '2부')" class="attendance-card bg-amber-500 text-white rounded-3xl p-5 shadow-lg shadow-amber-100 text-left relative overflow-hidden">
-                            <i class="fa-solid fa-cloud-sun absolute -right-4 -top-4 text-6xl opacity-10"></i>
-                            <div class="relative z-10">
-                                <p class="text-[10px] font-bold opacity-70 uppercase tracking-widest mb-1">Day Service</p>
-                                <p class="text-xl font-black">2부 예배</p>
-                                <p class="text-[10px] mt-4 font-medium px-2 py-0.5 bg-white/20 rounded-full inline-block">11:30 AM</p>
-                            </div>
-                        </button>
+                    <div id="class-grid-container" class="grid grid-cols-2 gap-3"></div>
+                    
+                    <div class="pt-4 border-t border-slate-100">
+                        <h3 class="font-bold text-slate-800 ml-1 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-user-tie text-indigo-500 text-sm"></i> 교역자 및 미지정 교사
+                        </h3>
+                        <div id="teacher-unassigned-container"></div>
                     </div>
                 </div>
             </section>
 
-            <!-- VIEW: 학급 목록 -->
-            <section id="view-classes" class="hidden space-y-6 animate-in slide-in-from-right-4 duration-300">
-                <div class="flex items-center justify-between mb-2 px-1">
-                    <h3 class="text-xl font-black text-slate-800"><span id="selectedPartTitle" class="text-blue-600">1부</span> 학급 선택</h3>
-                </div>
-                <div id="class-lists-container" class="space-y-8"></div>
-            </section>
-
-            <!-- VIEW: 출석 체크 -->
-            <section id="view-attendance" class="hidden space-y-6 animate-in slide-in-from-bottom-4 duration-300">
+            <section id="view-attendance" class="hidden space-y-6">
                 <div class="p-6 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-xl">
                     <div class="relative z-10">
                         <div class="flex justify-between items-start mb-2">
                             <div>
-                                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] mb-1" id="activePartLabel">1부 예배</p>
-                                <h3 id="currentClassName" class="text-2xl font-black">학급이름</h3>
+                                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] mb-1">인천온누리 유치2부</p>
+                                <h3 id="targetClassName" class="text-2xl font-black">학급명</h3>
                             </div>
-                            <span id="currentClassAge" class="bg-white/10 px-3 py-1 rounded-full text-[10px] font-black border border-white/10">나이</span>
+                            <span id="targetClassAge" class="bg-white/10 px-3 py-1 rounded-full text-[10px] font-black border border-white/10">연령</span>
                         </div>
-                        <p class="text-sm opacity-60 font-medium" id="currentClassTeacher">교사 성함</p>
+                        <p class="text-sm opacity-60 font-medium" id="targetClassTeacher">교사 정보</p>
                     </div>
                     <i class="fa-solid fa-users absolute -right-6 -bottom-6 text-8xl text-white opacity-5"></i>
                 </div>
 
-                <div id="student-list-container" class="space-y-3"></div>
+                <div id="members-list" class="space-y-3"></div>
 
                 <div class="pt-6 space-y-3 border-t border-slate-100">
                     <button onclick="openEntryModal()" class="w-full py-4 bg-slate-100 border border-slate-200 rounded-2xl text-slate-500 text-sm font-bold flex items-center justify-center gap-2 active:bg-slate-200 transition-colors">
-                        <i class="fa-solid fa-user-plus text-xs"></i> 명단 직접 추가 (관리자 전용)
+                        <i class="fa-solid fa-user-plus text-xs"></i> 명단에 없는 인원 직접 추가
                     </button>
-                    <button onclick="adjustCounter('visitor', 1)" class="w-full p-5 border border-blue-100 bg-blue-50/30 rounded-2xl flex items-center justify-between active:bg-blue-100/50 transition-colors">
+                    <button onclick="adjustCounter('visitor', 1)" class="w-full p-5 border border-blue-100 bg-blue-50/30 rounded-2xl flex items-center justify-between active:bg-blue-100 transition-colors">
                         <div class="text-left">
-                            <span class="text-sm font-extrabold text-blue-900 block">방문자/기타 합계</span>
+                            <span class="text-sm font-extrabold text-blue-900 block">방문자/기타 수동 합계</span>
                             <span class="text-[10px] text-blue-500 font-bold uppercase">Manual Count +1</span>
                         </div>
                         <span class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white font-black rounded-xl text-sm shadow-md">+1</span>
@@ -145,86 +113,67 @@
                 </div>
             </section>
 
-            <!-- VIEW: 설정 -->
             <section id="view-settings" class="hidden space-y-6">
                 <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-6">
                     <div>
-                        <h3 class="text-xl font-black mb-1 text-slate-800">데이터 관리</h3>
-                        <p class="text-sm text-slate-400">데이터 업로드 및 리포트 추출</p>
+                        <h3 class="text-xl font-black mb-1 text-slate-800">구글 시트 연동</h3>
+                        <p class="text-[11px] text-slate-400">데이터가 한글로 정확히 나오도록 개선되었습니다.</p>
                     </div>
                     <div class="space-y-4">
-                        <button onclick="exportAttendanceToExcel()" class="w-full py-4 bg-green-600 text-white rounded-2xl font-bold shadow-lg shadow-green-100 active:scale-95 transition-all flex items-center justify-center gap-3">
-                            <i class="fa-solid fa-file-export"></i> 출결 기록 엑셀 다운로드
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">학생 명단 CSV URL (2부)</label>
+                            <input type="url" id="sheetUrlInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] outline-none" placeholder="Student CSV URL">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">교사 명단 CSV URL (통합)</label>
+                            <input type="url" id="teacherSheetUrlInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] outline-none" placeholder="Teacher CSV URL">
+                        </div>
+                        <button onclick="syncAll()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-arrows-rotate"></i> 한글 데이터 복구 및 동기화
                         </button>
-                        
-                        <div class="h-px bg-slate-100 my-2"></div>
-
-                        <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100 text-[11px] text-amber-700 leading-relaxed font-medium">
-                            <i class="fa-solid fa-triangle-exclamation mr-1"></i> 엑셀 명단 업로드 시 기존의 학급 구조가 모두 대체됩니다.
-                        </div>
-                        <div class="relative">
-                            <input type="file" id="excelInput" accept=".xlsx, .xls" class="hidden"/>
-                            <label for="excelInput" id="fileLabel" class="w-full flex items-center justify-center gap-3 py-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer text-slate-400 font-bold text-sm hover:bg-slate-100">
-                                <i class="fa-solid fa-file-excel"></i> 엑셀 파일 선택
-                            </label>
-                        </div>
-                        <button id="importBtn" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 active:scale-95 transition-all">명단 데이터 적용하기</button>
                     </div>
-                    
-                    <div class="pt-6 border-t border-slate-100 text-center">
-                        <p class="text-[9px] text-slate-300 font-bold">PROJECT: onnurichurch-icn-youth</p>
-                        <p class="text-[9px] text-slate-300 font-bold">UID: <span id="debug-uid">...</span></p>
+                    <div class="h-px bg-slate-100 my-2"></div>
+                    <button onclick="exportExcel()" class="w-full py-4 bg-green-600 text-white rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-export"></i> 출결 보고서 엑셀 저장
+                    </button>
+                    <div class="text-center pt-4 border-t border-slate-50">
+                        <p class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Version 11.0 (Teacher Sync Fixed)</p>
                     </div>
                 </div>
             </section>
         </main>
 
-        <!-- 모달 구역 (이전 코드와 동일) -->
-        <div id="add-entry-modal" class="modal-overlay">
-            <div class="bg-white rounded-[2rem] w-full max-w-xs p-7 shadow-2xl space-y-6">
-                <h3 class="text-xl font-black text-center">명단 인원 추가</h3>
-                <input type="password" id="adminPassword" class="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold" placeholder="비밀번호">
-                <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
-                    <button onclick="setEntryType('student')" id="type-student" class="py-2 rounded-xl font-black text-xs bg-white text-blue-600">학생</button>
-                    <button onclick="setEntryType('teacher')" id="type-teacher" class="py-2 rounded-xl font-black text-xs text-slate-400">교사</button>
-                </div>
-                <input type="text" id="entryName" class="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold" placeholder="이름">
-                <div class="flex gap-2">
-                    <button onclick="closeEntryModal()" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">취소</button>
-                    <button onclick="submitNewEntry()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">추가</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="reset-confirm-modal" class="modal-overlay">
-            <div class="bg-white rounded-[2rem] w-full max-w-xs p-7 shadow-2xl space-y-6 text-center">
-                <h3 class="text-xl font-black text-red-600">데이터 초기화</h3>
-                <p class="text-xs text-slate-400">오늘의 모든 기록이 삭제됩니다.</p>
-                <input type="password" id="resetPasswordInput" class="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold" placeholder="관리자 비밀번호">
-                <div class="flex gap-2">
-                    <button onclick="closeResetModal()" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">취소</button>
-                    <button onclick="submitReset()" class="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold">초기화</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 하단 네비 -->
-        <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/80 backdrop-blur-md border-t border-slate-100 flex justify-around px-6 py-4 safe-area-bottom z-50">
+        <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/80 backdrop-blur-md border-t border-slate-100 flex justify-around px-6 py-4 z-50">
             <button onclick="showHome()" class="flex flex-col items-center gap-1 text-blue-600" id="nav-home">
                 <i class="fa-solid fa-house-chimney text-xl"></i>
-                <span class="text-[9px] font-black uppercase tracking-tighter">Home</span>
+                <span class="text-[9px] font-black uppercase">Home</span>
             </button>
             <button onclick="showSettings()" class="flex flex-col items-center gap-1 text-slate-300" id="nav-settings">
                 <i class="fa-solid fa-gear text-xl"></i>
-                <span class="text-[9px] font-black uppercase tracking-tighter">Setup</span>
+                <span class="text-[9px] font-black uppercase">Setup</span>
             </button>
-            <button onclick="resetStats()" class="flex flex-col items-center gap-1 text-slate-300">
+            <button onclick="resetTodayData()" class="flex flex-col items-center gap-1 text-slate-300">
                 <i class="fa-solid fa-trash-can text-xl"></i>
-                <span class="text-[9px] font-black uppercase tracking-tighter">Reset</span>
+                <span class="text-[9px] font-black uppercase">Reset</span>
             </button>
         </nav>
+        <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full text-xs font-bold opacity-0 transition-all pointer-events-none z-[60] shadow-2xl min-w-[200px] text-center">메시지</div>
+    </div>
 
-        <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full text-xs font-bold opacity-0 transition-all pointer-events-none z-[60] shadow-2xl">메시지</div>
+    <!-- 명단 추가 모달 -->
+    <div id="add-entry-modal" class="modal-overlay">
+        <div class="bg-white rounded-[2rem] w-full max-w-xs p-7 shadow-2xl space-y-6">
+            <h3 class="text-xl font-black text-center">직접 명단 추가</h3>
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+                <button onclick="setEntryType('student')" id="type-student" class="py-2 rounded-xl font-black text-xs bg-white text-blue-600">학생</button>
+                <button onclick="setEntryType('teacher')" id="type-teacher" class="py-2 rounded-xl font-black text-xs text-slate-400">교사</button>
+            </div>
+            <input type="text" id="entryName" class="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold outline-none" placeholder="성함 입력">
+            <div class="flex gap-2">
+                <button onclick="closeEntryModal()" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">취소</button>
+                <button onclick="submitNewMember()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">추가</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -232,348 +181,386 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase 설정 (제공해주신 키 적용)
         const firebaseConfig = {
             apiKey: "AIzaSyAlp-PpxgxPBXj0Ek1H-b52GjwiU8KyD5A",
             authDomain: "onnurichurch-icn-youth.firebaseapp.com",
             projectId: "onnurichurch-icn-youth",
             storageBucket: "onnurichurch-icn-youth.firebasestorage.app",
             messagingSenderId: "89074216999",
-            appId: "1:89074216999:web:1798e414726b1e4af75e02",
-            measurementId: "G-L3VMY8M75B"
+            appId: "1:89074216999:web:1798e414726b1e4af75e02"
         };
         
-        // Firestore 데이터 식별을 위한 ID (고정)
-        const artifactId = 'onnuri-icn-youth';
-        
+        const appId = 'onnuri-youth-2nd-v11';
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let currentUser = null;
-        let unsubDaily = null;
-        let unsubConfig = null;
-
-        const EMPTY_MAP = { 
-            "1부": { "6세": [], "7세": [], "새친구": [] }, 
-            "2부": { "6세": [], "7세": [], "새친구": [] } 
-        };
-
         const APP_STATE = { 
             view: 'dashboard', 
-            selectedPart: null, 
             selectedClass: null, 
             attendanceDB: {}, 
-            stats: { "1부": { visitor: 0 }, "2부": { visitor: 0 } }, 
-            classStructure: EMPTY_MAP, 
-            newEntryType: 'student' 
+            stats: { visitor: 0 }, 
+            classStructure: { "6세": [], "7세": [], "새친구": [], "teachers": [] },
+            newEntryType: 'student'
         };
 
-        // Auth Init
         async function initAuth() {
-            try {
-                await signInAnonymously(auth);
-            } catch (err) {
-                console.error("Firebase Auth Error:", err);
-                showToast("데이터베이스 연결 실패");
-                document.getElementById('loading-overlay').style.display = 'none';
-            }
+            try { await signInAnonymously(auth); } catch (e) { showToast("DB 연결 실패"); }
         }
 
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                document.getElementById('debug-uid').innerText = user.uid;
-                startSync();
-            } else {
-                document.getElementById('loading-overlay').style.display = 'none';
-            }
-        });
+        onAuthStateChanged(auth, (user) => { if (user) startSync(); });
 
         function getDateKey() {
             const now = new Date();
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         }
 
-        // Firebase Sync
         function startSync() {
-            if (!currentUser) return;
-            const dateKey = getDateKey();
-            
-            // Sync Structure (Rule 1)
-            const configRef = doc(db, 'artifacts', artifactId, 'public', 'data', 'config', 'structure');
-            unsubConfig = onSnapshot(configRef, (snap) => {
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'structure'), (snap) => {
                 if (snap.exists()) {
                     APP_STATE.classStructure = snap.data().map;
-                } else {
-                    setDoc(configRef, { map: EMPTY_MAP });
+                    if (snap.data().sheetUrl) document.getElementById('sheetUrlInput').value = snap.data().sheetUrl;
+                    if (snap.data().teacherSheetUrl) document.getElementById('teacherSheetUrlInput').value = snap.data().teacherSheetUrl;
                 }
                 updateUI();
             });
-
-            // Sync Attendance (Rule 1)
-            const dailyRef = doc(db, 'artifacts', artifactId, 'public', 'data', 'daily_records', dateKey);
-            unsubDaily = onSnapshot(dailyRef, (snap) => {
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'daily_records', getDateKey()), (snap) => {
                 if (snap.exists()) {
-                    const data = snap.data();
-                    APP_STATE.attendanceDB = data.attendanceDB || {};
-                    APP_STATE.stats = data.stats || { "1부": { visitor: 0 }, "2부": { visitor: 0 } };
+                    const d = snap.data();
+                    APP_STATE.attendanceDB = d.attendanceDB || {};
+                    APP_STATE.stats = d.stats || { visitor: 0 };
                 }
                 updateUI();
-                document.getElementById('loading-overlay').style.display = 'none';
-            }, (err) => {
-                document.getElementById('loading-overlay').style.display = 'none';
             });
         }
 
-        async function updateRemote() {
-            if (!currentUser) return;
-            const dailyRef = doc(db, 'artifacts', artifactId, 'public', 'data', 'daily_records', getDateKey());
-            await setDoc(dailyRef, { 
+        async function saveAttendance() {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'daily_records', getDateKey()), { 
                 attendanceDB: APP_STATE.attendanceDB, 
                 stats: APP_STATE.stats, 
                 updatedAt: new Date().toISOString() 
             }, { merge: true });
         }
 
-        async function updateStructureRemote() {
-            if (!currentUser) return;
-            const configRef = doc(db, 'artifacts', artifactId, 'public', 'data', 'config', 'structure');
-            await setDoc(configRef, { map: APP_STATE.classStructure });
+        async function saveStructure(sUrl = "", tUrl = "") {
+            const payload = { map: APP_STATE.classStructure };
+            if (sUrl) payload.sheetUrl = sUrl;
+            if (tUrl) payload.teacherSheetUrl = tUrl;
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'structure'), payload);
         }
 
-        // Logic Functions (Dashboard, Classes, Attendance rendering...)
+        // --- ENHANCED SCANNER WITH UTF-8 & TEACHER FILTER FIX ---
+        window.syncAll = async () => {
+            const sUrl = document.getElementById('sheetUrlInput').value.trim();
+            const tUrl = document.getElementById('teacherSheetUrlInput').value.trim();
+            if (!sUrl) return showToast("학생 명단 URL이 필요합니다.");
+
+            setLoading(true, "한글 데이터를 복구하며 분석 중입니다...");
+            try {
+                const newMap = { "6세": [], "7세": [], "새친구": [], "teachers": [] };
+                const assignedTeacherNames = new Set(); // 반 배정 교사 중복 제거용
+
+                // 1. 학생 명단 처리
+                const sResp = await fetch(sUrl);
+                const sBuf = await sResp.arrayBuffer();
+                const sText = new TextDecoder("utf-8").decode(sBuf);
+                const sWb = XLSX.read(sText, { type: 'string' });
+                const sRows = XLSX.utils.sheet_to_json(sWb.Sheets[sWb.SheetNames[0]], { header: 1, defval: "" });
+                
+                let hIdx = -1;
+                let colMap = { age: -1, cls: -1, name: -1 };
+
+                for(let i=0; i<Math.min(sRows.length, 50); i++) {
+                    const row = sRows[i];
+                    if (!row || !Array.isArray(row)) continue;
+                    let fAge = -1, fName = -1, fCls = -1;
+                    for(let j=0; j<row.length; j++) {
+                        const cell = String(row[j] || "").replace(/\s/g, "");
+                        if (cell.includes("나이")) fAge = j;
+                        if (cell.includes("이름") || cell.includes("성명")) fName = j;
+                        if (cell.includes("반")) fCls = j;
+                    }
+                    if (fAge !== -1 && fName !== -1) {
+                        hIdx = i; colMap.age = fAge; colMap.name = fName; colMap.cls = fCls;
+                        break;
+                    }
+                }
+
+                // 자동검색 실패 시 수동 강제 매칭 (A열 공백 구조 대비)
+                if (hIdx === -1) { hIdx = 3; colMap.age = 1; colMap.cls = 2; colMap.name = 4; }
+
+                let stickyAge = "", stickyClass = "", stickyTeachers = "미지정";
+
+                for (let i = hIdx + 1; i < sRows.length; i++) {
+                    const row = sRows[i];
+                    if (!row) continue;
+                    const studentName = row[colMap.name] ? String(row[colMap.name]).trim() : "";
+                    if (!studentName || studentName === "이름" || studentName.includes("총원") || studentName.length < 2) continue;
+
+                    if (row[colMap.age] && String(row[colMap.age]).trim() !== "") {
+                        stickyAge = String(row[colMap.age]).replace(/[^0-9]/g, "") + "세";
+                    }
+                    if (row[colMap.cls] && String(row[colMap.cls]).trim() !== "") {
+                        const raw = String(row[colMap.cls]);
+                        stickyClass = raw.split(/[\n(]/)[0].trim();
+                        const tMatches = raw.match(/\((.*?)\)/g);
+                        if (tMatches) {
+                            // '선생님' 글자를 제거하고 이름만 추출하여 Set에 담음
+                            const ts = tMatches.map(m => m.replace(/[()]/g, '').replace('선생님', '').trim()).filter(n => n.length >= 2);
+                            ts.forEach(t => assignedTeacherNames.add(t));
+                            stickyTeachers = ts.join('/');
+                        } else { stickyTeachers = "미지정"; }
+                    }
+
+                    if (stickyClass.includes('새친구')) stickyAge = "새친구";
+                    const key = stickyClass.includes('새친구') ? "새친구" : stickyAge;
+                    if (!newMap[key]) continue;
+
+                    let targetCls = newMap[key].find(c => c.name === stickyClass);
+                    if (!targetCls) {
+                        targetCls = { id: `2nd-${key.charAt(0)}-${stickyClass}`, name: stickyClass, teacher: stickyTeachers, students: [] };
+                        newMap[key].push(targetCls);
+                    }
+                    if (!targetCls.students.includes(studentName)) targetCls.students.push(studentName);
+                }
+
+                // 2. 교사/교역자 명단 처리
+                if (tUrl) {
+                    const tResp = await fetch(tUrl);
+                    const tBuf = await tResp.arrayBuffer();
+                    const tText = new TextDecoder("utf-8").decode(tBuf);
+                    const tWb = XLSX.read(tText, { type: 'string' });
+                    const tRows = XLSX.utils.sheet_to_json(tWb.Sheets[tWb.SheetNames[0]], { header: 1, defval: "" });
+                    
+                    let thIdx = -1;
+                    for(let i=0; i<Math.min(tRows.length, 30); i++) {
+                        if (tRows[i].some(c => String(c).includes('이름'))) { thIdx = i; break; }
+                    }
+
+                    if (thIdx !== -1) {
+                        const head = tRows[thIdx];
+                        const ni = head.findIndex(h => String(h).includes('이름'));
+                        const pi = head.findIndex(h => ["부", "예배", "구분"].some(k => String(h).includes(k)));
+
+                        for (let i = thIdx + 1; i < tRows.length; i++) {
+                            const r = tRows[i];
+                            const tName = r[ni] ? String(r[ni]).trim() : "";
+                            const tPart = pi !== -1 ? String(r[pi]) : "";
+                            
+                            // 2부 교사 또는 교역자 키워드 체크
+                            const isPastors = ["교역자", "전도사", "목사"].some(k => String(r).includes(k));
+                            const is2ndService = tPart.includes('2') || tPart.includes('오후');
+
+                            if (tName && (is2ndService || isPastors)) {
+                                // 반에 배정된 이름은 제외하고 미지정으로 등록
+                                if (!assignedTeacherNames.has(tName)) {
+                                    if (!newMap.teachers.includes(tName)) newMap.teachers.push(tName);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                APP_STATE.classStructure = newMap;
+                await saveStructure(sUrl, tUrl);
+                showToast("한글 복구 및 동기화 완료!");
+                showHome();
+            } catch (err) {
+                console.error(err);
+                showToast("분석 실패: " + err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        // --- UI & NAVIGATION ---
         window.showHome = () => { APP_STATE.view = 'dashboard'; renderView(); };
         window.showSettings = () => { APP_STATE.view = 'settings'; renderView(); };
-        window.navigateTo = (type, val) => {
-            if (type === 'part') { APP_STATE.selectedPart = val; APP_STATE.view = 'classes'; }
-            else { APP_STATE.selectedClass = val; APP_STATE.view = 'attendance'; }
-            renderView();
-        };
-        window.goBack = () => {
-            if (APP_STATE.view === 'attendance') APP_STATE.view = 'classes';
-            else if (APP_STATE.view === 'classes') APP_STATE.view = 'dashboard';
-            else APP_STATE.view = 'dashboard';
-            renderView();
-        };
+        window.goBack = () => { APP_STATE.view = 'dashboard'; renderView(); };
 
         function renderView() {
-            const vs = ['view-dashboard', 'view-classes', 'view-attendance', 'view-settings'];
-            vs.forEach(v => document.getElementById(v).style.display = 'none');
-            document.getElementById(`view-${APP_STATE.view}`).style.display = 'block';
-
+            ['view-dashboard', 'view-attendance', 'view-settings'].forEach(id => {
+                document.getElementById(id).style.display = id === `view-${APP_STATE.view}` ? 'block' : 'none';
+            });
             document.getElementById('backBtn').classList.toggle('invisible', APP_STATE.view === 'dashboard');
             document.getElementById('nav-home').classList.toggle('text-blue-600', APP_STATE.view === 'dashboard');
             document.getElementById('nav-settings').classList.toggle('text-blue-600', APP_STATE.view === 'settings');
-
             updateUI();
         }
 
         function updateUI() {
             if (APP_STATE.view === 'dashboard') renderDashboard();
-            else if (APP_STATE.view === 'classes') renderClasses();
             else if (APP_STATE.view === 'attendance') renderAttendance();
         }
 
         function renderDashboard() {
-            const counts = { "1부": { s6: 0, s7: 0, t: 0, new1: 0, new2: 0 }, "2부": { s6: 0, s7: 0, t: 0, new1: 0, new2: 0 } };
+            const c = { s6: 0, s7: 0, t: 0, new: 0 };
             for (const cid in APP_STATE.attendanceDB) {
-                const part = cid.startsWith('1-') ? '1부' : '2부';
-                const ageType = cid.split('-')[1];
-                const records = APP_STATE.attendanceDB[cid];
-                let className = "";
-                const partStruct = APP_STATE.classStructure[part];
-                for(const k in partStruct) {
-                    const target = partStruct[k].find(c => c.id === cid);
-                    if (target) { className = target.name; break; }
-                }
-                for (const name in records) {
-                    if (records[name] === true) {
-                        if (name.includes('(교사)')) counts[part].t++;
-                        else {
-                            if (className.includes('1주')) counts[part].new1++;
-                            else if (className.includes('2주')) counts[part].new2++;
-                            else if (ageType === '6') counts[part].s6++;
-                            else if (ageType === '7') counts[part].s7++;
-                        }
+                const r = APP_STATE.attendanceDB[cid];
+                for (const n in r) {
+                    if (r[n]) {
+                        if (n.includes('(교사)') || cid.includes('-teachers')) c.t++;
+                        else if (cid.includes('-새-')) c.new++;
+                        else if (cid.includes('-6-')) c.s6++;
+                        else if (cid.includes('-7-')) c.s7++;
                     }
                 }
             }
-            const container = document.getElementById('stat-rows-container');
-            const rowData = [
-                { label: '6세', icon: '6', color: 'blue', val1: counts["1부"].s6, val2: counts["2부"].s6 },
-                { label: '7세', icon: '7', color: 'green', val1: counts["1부"].s7, val2: counts["2부"].s7 },
-                { label: '교사', icon: 'T', color: 'purple', val1: counts["1부"].t, val2: counts["2부"].t },
-                { label: '새친구 1주', icon: '1', color: 'amber', val1: counts["1부"].new1, val2: counts["2부"].new1 },
-                { label: '새친구 2주', icon: '2', color: 'amber', val1: counts["1부"].new2, val2: counts["2부"].new2 },
-                { label: '방문/기타', icon: 'V', color: 'slate', val1: APP_STATE.stats["1부"].visitor, val2: APP_STATE.stats["2부"].visitor }
+            const stats = [
+                { label: '6세 어린이', color: 'blue', val: c.s6 },
+                { label: '7세 어린이', color: 'green', val: c.s7 },
+                { label: '교사 및 교역자', color: 'purple', val: c.t },
+                { label: '새친구들', color: 'amber', val: c.new },
+                { label: '방문자 총합', color: 'slate', val: APP_STATE.stats.visitor }
             ];
-            container.innerHTML = rowData.map(r => `
-                <div class="grid grid-cols-3 items-center p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-7 h-7 bg-${r.color}-100 text-${r.color}-600 rounded-lg flex items-center justify-center text-[10px] font-black">${r.icon}</div>
-                        <span class="text-xs font-extrabold text-slate-700">${r.label}</span>
-                    </div>
-                    <div class="text-center font-black text-${r.color}-600 text-lg">${r.val1}</div>
-                    <div class="text-center font-black text-${r.color}-400 text-lg">${r.val2}</div>
+            document.getElementById('stat-rows-container').innerHTML = stats.map(s => `
+                <div class="grid grid-cols-2 items-center p-4">
+                    <span class="text-xs font-extrabold text-slate-700">${s.label}</span>
+                    <div class="text-right font-black text-${s.color}-600 text-lg">${s.val}명</div>
                 </div>
             `).join('');
-            const now = new Date(), days = ['일','월','화','수','목','금','토'];
-            document.getElementById('displayDate').innerText = `${now.getMonth()+1}/${now.getDate()} (${days[now.getDay()]})`;
+
+            const grid = document.getElementById('class-grid-container'); grid.innerHTML = '';
+            ['새친구', '6세', '7세'].forEach(key => {
+                APP_STATE.classStructure[key].forEach(cls => {
+                    const count = Object.values(APP_STATE.attendanceDB[cls.id] || {}).filter(v => v === true).length;
+                    const btn = document.createElement('button');
+                    btn.className = "p-5 bg-white border border-slate-100 rounded-[1.5rem] text-left shadow-sm active:scale-95 transition-all";
+                    btn.onclick = () => { APP_STATE.selectedClass = cls; APP_STATE.view = 'attendance'; renderView(); };
+                    btn.innerHTML = `<p class="font-black text-slate-800">${cls.name}</p><p class="text-[10px] text-slate-400 truncate">${cls.teacher}</p>${count > 0 ? `<div class="mt-2 text-[9px] text-blue-600 font-black bg-blue-50 px-2 py-0.5 rounded-full inline-block">${count}명 출석</div>` : ''}`;
+                    grid.appendChild(btn);
+                });
+            });
+
+            const tCount = Object.values(APP_STATE.attendanceDB['2nd-t-teachers'] || {}).filter(v => v === true).length;
+            document.getElementById('teacher-unassigned-container').innerHTML = `
+                <button onclick='window.openTeachers()' class="w-full p-5 bg-slate-900 text-white rounded-[1.5rem] text-left shadow-lg relative overflow-hidden active:scale-95 transition-all">
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Non-Class Group</p>
+                        <p class="font-black text-lg">반 미지정 교사 및 교역자</p>
+                        <p class="text-[10px] opacity-60">등록됨: ${APP_STATE.classStructure.teachers?.length || 0}명</p>
+                        ${tCount > 0 ? `<div class="mt-2 text-[10px] bg-blue-600 px-3 py-1 rounded-full inline-block font-black">${tCount}명 체크완료</div>` : ''}
+                    </div>
+                </button>
+            `;
+            document.getElementById('displayDate').innerText = `${new Date().getMonth()+1}/${new Date().getDate()}`;
         }
 
-        function renderClasses() {
-            const data = APP_STATE.classStructure[APP_STATE.selectedPart];
-            document.getElementById('selectedPartTitle').innerText = APP_STATE.selectedPart;
-            const container = document.getElementById('class-lists-container');
-            container.innerHTML = '';
-            const sections = [{ key: '새친구', title: 'New Friends' }, { key: '6세', title: 'Age 6' }, { key: '7세', title: 'Age 7' }];
-            sections.forEach(s => {
-                if (data[s.key] && data[s.key].length > 0) {
-                    const secDiv = document.createElement('div');
-                    secDiv.innerHTML = `<p class="text-[10px] font-black text-slate-400 mb-3 ml-1 uppercase tracking-widest">${s.title}</p>`;
-                    const grid = document.createElement('div'); grid.className = "grid grid-cols-2 gap-3";
-                    data[s.key].forEach(cls => {
-                        const count = Object.values(APP_STATE.attendanceDB[cls.id] || {}).filter(v => v === true).length;
-                        const btn = document.createElement('button');
-                        btn.className = "p-5 bg-white border border-slate-100 rounded-[1.5rem] text-left shadow-sm active:bg-blue-50";
-                        btn.onclick = () => navigateTo('class', cls);
-                        btn.innerHTML = `<p class="font-black text-slate-800">${cls.name}</p><p class="text-[10px] text-slate-400">교사: ${cls.teacher}</p>${count > 0 ? `<div class="mt-2 text-[9px] text-blue-600 font-black bg-blue-50 px-2 py-0.5 rounded-full inline-block">${count}명</div>` : ''}`;
-                        grid.appendChild(btn);
-                    });
-                    secDiv.appendChild(grid); container.appendChild(secDiv);
-                }
-            });
-        }
+        window.openTeachers = () => {
+            APP_STATE.selectedClass = { id: '2nd-t-teachers', name: '반 미지정 교사', teacher: '유치2부 지원팀', students: [] };
+            APP_STATE.view = 'attendance';
+            renderView();
+        };
 
         function renderAttendance() {
             const cls = APP_STATE.selectedClass; if (!cls) return;
-            const cid = cls.id;
-            document.getElementById('currentClassName').innerText = cls.name;
-            document.getElementById('currentClassAge').innerText = cid.includes('-새-') ? '공통' : cid.split('-')[1] + '세';
-            document.getElementById('currentClassTeacher').innerText = `교사: ${cls.teacher}`;
-            document.getElementById('activePartLabel').innerText = `${APP_STATE.selectedPart} 예배`;
-            const container = document.getElementById('student-list-container'); container.innerHTML = '';
-            const curRec = APP_STATE.attendanceDB[cid] || {};
+            document.getElementById('targetClassName').innerText = cls.name;
+            document.getElementById('targetClassAge').innerText = cls.id.includes('teachers') ? '교사' : (cls.id.includes('-새-') ? '새친구' : cls.id.split('-')[1] + '세');
+            document.getElementById('targetClassTeacher').innerText = cls.teacher;
+            const cont = document.getElementById('members-list'); cont.innerHTML = '';
+            const recs = APP_STATE.attendanceDB[cls.id] || {};
             const drawRow = (name, isT) => {
-                const isP = curRec[name] || false;
+                const isP = recs[name] || false;
                 const row = document.createElement('div');
                 row.className = `flex items-center justify-between p-4 rounded-3xl border ${isP ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100'}`;
-                row.innerHTML = `<div class="flex items-center gap-3"><span class="font-extrabold ${isP ? 'text-blue-900' : 'text-slate-700'}">${name.split('(')[0]}</span>${isT ? '<span class="text-[8px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-black">T</span>' : ''}</div><div class="flex gap-2"><button onclick="setStatus('${cid}', '${name}', true)" class="w-12 py-2 rounded-xl text-xs font-black ${isP ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">출석</button><button onclick="setStatus('${cid}', '${name}', false)" class="w-12 py-2 rounded-xl text-xs font-black ${!isP && curRec.hasOwnProperty(name) ? 'bg-slate-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">결석</button></div>`;
-                container.appendChild(row);
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-extrabold ${isP ? 'text-blue-900' : 'text-slate-700'}">${name.split('(')[0]}</span>
+                        ${isT ? '<span class="text-[8px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-black">T</span>' : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="setStatus('${cls.id}', '${name}', true)" class="w-12 py-2 rounded-xl text-xs font-black ${isP ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">출석</button>
+                        <button onclick="setStatus('${cls.id}', '${name}', false)" class="w-12 py-2 rounded-xl text-xs font-black ${!isP && recs.hasOwnProperty(name) ? 'bg-slate-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">결석</button>
+                    </div>`;
+                cont.appendChild(row);
             };
-            cls.teacher.split(/[/,]/).forEach(t => { if(t && t.trim() !== '미지정') drawRow(`${t.trim()}(교사)`, true); });
-            cls.students.forEach(s => { if(s) drawRow(s, false); });
+            if (cls.id.includes('teachers')) {
+                APP_STATE.classStructure.teachers.forEach(t => drawRow(t, true));
+            } else {
+                cls.teacher.split(/[/,]/).forEach(t => { if(t.trim() && t.trim() !== '미지정') drawRow(`${t.trim()}(교사)`, true); });
+                cls.students.forEach(s => drawRow(s, false));
+            }
         }
 
         window.setStatus = async (cid, n, s) => {
             if (!APP_STATE.attendanceDB[cid]) APP_STATE.attendanceDB[cid] = {};
-            APP_STATE.attendanceDB[cid][n] = s; renderAttendance(); await updateRemote(); showToast("체크 완료");
+            APP_STATE.attendanceDB[cid][n] = s;
+            renderAttendance(); await saveAttendance();
         };
 
         window.adjustCounter = async (type, amount) => {
-            const part = APP_STATE.selectedPart || "1부";
-            if (!APP_STATE.stats[part]) APP_STATE.stats[part] = { visitor: 0 };
-            APP_STATE.stats[part][type] += amount; await updateRemote(); showToast("방문자 반영됨");
+            APP_STATE.stats[type] += amount;
+            await saveAttendance(); showToast("수동 인원이 반영되었습니다.");
         };
 
-        // Export To Excel
-        window.exportAttendanceToExcel = () => {
-            const dateStr = getDateKey(); const exportData = [["날짜", "예배", "연령", "반 이름", "역할", "이름", "출석여부"]];
-            ["1부", "2부"].forEach(part => {
-                const structure = APP_STATE.classStructure[part];
-                for (const ageGroup in structure) {
-                    structure[ageGroup].forEach(cls => {
-                        const records = APP_STATE.attendanceDB[cls.id] || {};
-                        cls.teacher.split(/[/,]/).forEach(t => { if (t && t.trim() !== '미지정') exportData.push([dateStr, part, ageGroup, cls.name, "교사", t.trim(), records[`${t.trim()}(교사)`] ? "출석" : "결석"]); });
-                        cls.students.forEach(s => { exportData.push([dateStr, part, ageGroup, cls.name, "학생", s, records[s] ? "출석" : "결석"]); });
-                    });
-                }
-                if (APP_STATE.stats[part]?.visitor > 0) exportData.push([dateStr, part, "-", "방문자", "기타", "수동", `${APP_STATE.stats[part].visitor}명`]);
-            });
-            const wb = XLSX.utils.book_new(); const ws = XLSX.utils.aoa_to_sheet(exportData);
-            XLSX.utils.book_append_sheet(wb, ws, "Attendance"); XLSX.writeFile(wb, `Onnuri_Attendance_${dateStr}.xlsx`); showToast("다운로드 완료");
+        window.exportExcel = () => {
+            const date = getDateKey();
+            const data = [["날짜", "부서", "구분", "반", "이름", "출석여부"]];
+            const s = APP_STATE.classStructure;
+            for (const g in s) {
+                if (g === 'teachers') continue;
+                s[g].forEach(cls => {
+                    const rec = APP_STATE.attendanceDB[cls.id] || {};
+                    cls.teacher.split(/[/,]/).forEach(t => { if(t.trim()) data.push([date, "2부", "교사(반)", cls.name, t.trim(), rec[`${t.trim()}(교사)`] ? "출석" : "결석"]); });
+                    cls.students.forEach(st => data.push([date, "2부", "학생", cls.name, st, rec[st] ? "출석" : "결석"]));
+                });
+            }
+            const tRec = APP_STATE.attendanceDB['2nd-t-teachers'] || {};
+            (s.teachers || []).forEach(t => data.push([date, "2부", "교사(미지정)", "유치부", t, tRec[t] ? "출석" : "결석"]));
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Attendance");
+            XLSX.writeFile(wb, `Youth_2nd_${date}.xlsx`);
         };
 
-        // Reset
-        window.resetStats = () => { document.getElementById('reset-confirm-modal').style.display = 'flex'; };
-        window.closeResetModal = () => { document.getElementById('reset-confirm-modal').style.display = 'none'; };
-        window.submitReset = async () => {
-            if (document.getElementById('resetPasswordInput').value === "1234") {
-                APP_STATE.attendanceDB = {}; APP_STATE.stats = { "1부": { visitor: 0 }, "2부": { visitor: 0 } };
-                await updateRemote(); showHome(); closeResetModal(); showToast("초기화되었습니다");
-            } else showToast("비밀번호 오류");
+        window.resetTodayData = () => {
+            if(confirm("정말로 오늘 기록을 초기화할까요? (명단은 유지됩니다)")) {
+                APP_STATE.attendanceDB = {}; APP_STATE.stats = { visitor: 0 };
+                saveAttendance(); showHome(); showToast("초기화 완료");
+            }
         };
 
-        // Entry Modals
-        window.openEntryModal = () => { document.getElementById('add-entry-modal').style.display = 'flex'; };
-        window.closeEntryModal = () => { document.getElementById('add-entry-modal').style.display = 'none'; };
+        window.openEntryModal = () => document.getElementById('add-entry-modal').style.display = 'flex';
+        window.closeEntryModal = () => document.getElementById('add-entry-modal').style.display = 'none';
         window.setEntryType = (t) => {
             APP_STATE.newEntryType = t;
             document.getElementById('type-student').className = t==='student' ? "py-2 rounded-xl font-black text-xs bg-white text-blue-600" : "py-2 rounded-xl font-black text-xs text-slate-400";
             document.getElementById('type-teacher').className = t==='teacher' ? "py-2 rounded-xl font-black text-xs bg-white text-purple-600" : "py-2 rounded-xl font-black text-xs text-slate-400";
         };
-        window.submitNewEntry = async () => {
-            if (document.getElementById('adminPassword').value !== "1234") return showToast("인증 실패");
-            const name = document.getElementById('entryName').value.trim(); if(!name) return;
-            const curCls = APP_STATE.selectedClass, part = APP_STATE.selectedPart; let success = false;
-            for (const ageGroup in APP_STATE.classStructure[part]) {
-                const target = APP_STATE.classStructure[part][ageGroup].find(c => c.id === curCls.id);
-                if (target) {
-                    if (APP_STATE.newEntryType === 'student') { if (!target.students.includes(name)) target.students.push(name); }
-                    else { if (target.teacher === '미지정') target.teacher = name; else target.teacher += "/" + name; }
-                    success = true; break;
+
+        window.submitNewMember = async () => {
+            const name = document.getElementById('entryName').value.trim();
+            if(!name) return;
+            const cls = APP_STATE.selectedClass;
+            if (cls.id.includes('teachers')) {
+                if (!APP_STATE.classStructure.teachers.includes(name)) APP_STATE.classStructure.teachers.push(name);
+            } else {
+                for (const age in APP_STATE.classStructure) {
+                    const group = APP_STATE.classStructure[age];
+                    if (Array.isArray(group)) {
+                        const target = group.find(c => c.id === cls.id);
+                        if (target) {
+                            if (APP_STATE.newEntryType === 'student') target.students.push(name);
+                            else target.teacher += (target.teacher === '미지정' ? '' : ',') + name;
+                            break;
+                        }
+                    }
                 }
             }
-            if (success) { await updateStructureRemote(); renderAttendance(); closeEntryModal(); showToast("추가 성공"); }
+            await saveStructure(); renderAttendance(); closeEntryModal(); showToast("추가됨");
         };
 
-        // Excel Import
-        document.getElementById('importBtn').addEventListener('click', () => {
-            const f = document.getElementById('excelInput').files[0]; if (!f) return showToast("파일 선택");
-            document.getElementById('loading-overlay').style.display = 'flex';
-            const reader = new FileReader(); reader.onload = async (e) => {
-                try {
-                    const data = new Uint8Array(e.target.result); const wb = XLSX.read(data, { type: 'array' });
-                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
-                    const newMap = JSON.parse(JSON.stringify(EMPTY_MAP));
-                    let curP = "1부", curA = "", curC = "", curT = "", hIdx = -1;
-                    for(let i=0; i<rows.length; i++) if(rows[i] && rows[i].some(c => String(c).includes('이름'))) { hIdx = i; break; }
-                    const hs = rows[hIdx];
-                    const aI = hs.findIndex(h => h && (String(h).includes('나이')||String(h).includes('연령')));
-                    const cI = hs.findIndex(h => h && String(h).includes('반'));
-                    const nI = hs.findIndex(h => h && String(h).includes('이름'));
-                    for (let i = 0; i < rows.length; i++) {
-                        const row = rows[i]; if (!row || row.length === 0) continue;
-                        const rowStr = row.join('|');
-                        if (/(1부|09:00|오전)/i.test(rowStr)) curP = "1부"; if (/(2부|11:30|오후)/i.test(rowStr)) curP = "2부";
-                        if (i <= hIdx || !row[nI]) continue;
-                        if (row[aI]) curA = String(row[aI]).trim().replace(/[^0-9]/g, "") + "세";
-                        if (row[cI]) {
-                            const raw = String(row[cI]); curC = raw.split('\n')[0].split('(')[0].trim();
-                            const matchT = [...raw.matchAll(/\((.*?)\)/g)];
-                            curT = matchT.length > 0 ? matchT.map(m => m[1].replace('선생님','').trim()).join('/') : "미지정";
-                        }
-                        if (!curA || !curC) continue;
-                        let typeKey = curC.includes('새친구') ? "새친구" : curA;
-                        if (!newMap[curP][typeKey]) newMap[curP][typeKey] = [];
-                        let clsObj = newMap[curP][typeKey].find(c => c.name === curC);
-                        if (!clsObj) {
-                            clsObj = { id: `${curP.charAt(0)}-${typeKey.charAt(0)}-${curC}`, name: curC, teacher: curT, students: [] };
-                            newMap[curP][typeKey].push(clsObj);
-                        }
-                        clsObj.students.push(String(row[nI]).trim());
-                    }
-                    await setDoc(doc(db, 'artifacts', artifactId, 'public', 'data', 'config', 'structure'), { map: newMap });
-                    document.getElementById('loading-overlay').style.display = 'none'; showToast("명단 업데이트 성공"); showHome();
-                } catch (err) { showToast("엑셀 형식 오류"); document.getElementById('loading-overlay').style.display = 'none'; }
-            }; reader.readAsArrayBuffer(f);
-        });
-
-        function showToast(msg) {
-            const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('opacity-100', 'bottom-28');
-            setTimeout(() => t.classList.remove('opacity-100', 'bottom-28'), 2000);
+        function setLoading(s, t = "") {
+            document.getElementById('loading-overlay').style.display = s ? 'flex' : 'none';
+            if (t) document.getElementById('loading-text').innerText = t;
         }
+
+        function showToast(m) {
+            const t = document.getElementById('toast');
+            t.innerText = m; t.classList.add('opacity-100', 'bottom-28');
+            setTimeout(() => t.classList.remove('opacity-100', 'bottom-28'), 3000);
+        }
+
         initAuth();
     </script>
 </body>
