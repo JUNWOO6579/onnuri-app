@@ -117,7 +117,7 @@
                 <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-6">
                     <div>
                         <h3 class="text-xl font-black mb-1 text-slate-800">구글 시트 연동</h3>
-                        <p class="text-[11px] text-slate-400">데이터를 분석하여 사역 지원팀(반 미지정)을 분류합니다.</p>
+                        <p class="text-[11px] text-slate-400">데이터를 분석하여 주차별 새친구 및 지원팀을 분류합니다.</p>
                     </div>
                     <div class="space-y-4">
                         <div class="space-y-1.5">
@@ -129,7 +129,7 @@
                             <input type="url" id="teacherSheetUrlInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] outline-none" placeholder="Teacher CSV URL">
                         </div>
                         <button onclick="syncAll()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-arrows-rotate"></i> 필터링 및 명단 동기화
+                            <i class="fa-solid fa-arrows-rotate"></i> 새친구 주차별 명단 동기화
                         </button>
                     </div>
                     <div class="h-px bg-slate-100 my-2"></div>
@@ -137,7 +137,7 @@
                         <i class="fa-solid fa-file-export"></i> 출결 보고서 엑셀 저장
                     </button>
                     <div class="text-center pt-4 border-t border-slate-50">
-                        <p class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Version 11.7 (Terminology Updated)</p>
+                        <p class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Version 11.8 (NewFriends Weekly Stats)</p>
                     </div>
                 </div>
             </section>
@@ -200,7 +200,7 @@
             selectedClass: null, 
             attendanceDB: {}, 
             stats: { visitor: 0 }, 
-            classStructure: { "6세": [], "7세": [], "새친구": [], "teachers": [] },
+            classStructure: { "6세": [], "7세": [], "새친구 1주차": [], "새친구 2주차": [], "teachers": [] },
             newEntryType: 'student'
         };
 
@@ -254,9 +254,10 @@
             const tUrl = document.getElementById('teacherSheetUrlInput').value.trim();
             if (!sUrl) return showToast("학생 명단 URL이 필요합니다.");
 
-            setLoading(true, "교사 필터링 및 명단 분석 중...");
+            setLoading(true, "새친구 주차별 분류 및 명단 분석 중...");
             try {
-                const newMap = { "6세": [], "7세": [], "새친구": [], "teachers": [] };
+                // 구조 초기화 (새친구 1/2주차 분리)
+                const newMap = { "6세": [], "7세": [], "새친구 1주차": [], "새친구 2주차": [], "teachers": [] };
                 const assignedTeacherNames = new Set(); 
 
                 const sResp = await fetch(sUrl);
@@ -308,13 +309,18 @@
                         } else { stickyTeachers = "미지정"; }
                     }
 
-                    if (stickyClass.includes('새친구')) stickyAge = "새친구";
-                    const key = stickyClass.includes('새친구') ? "새친구" : stickyAge;
+                    let key = stickyAge;
+                    if (stickyClass.includes('새친구')) {
+                        if (stickyClass.includes('1주')) key = "새친구 1주차";
+                        else if (stickyClass.includes('2주')) key = "새친구 2주차";
+                        else key = "새친구 1주차"; // 기본값
+                    }
+                    
                     if (!newMap[key]) continue;
 
                     let targetCls = newMap[key].find(c => c.name === stickyClass);
                     if (!targetCls) {
-                        targetCls = { id: `2nd-${key.charAt(0)}-${stickyClass}`, name: stickyClass, teacher: stickyTeachers, students: [] };
+                        targetCls = { id: `2nd-${key.replace(/ /g, '-')}-${stickyClass}`, name: stickyClass, teacher: stickyTeachers, students: [] };
                         newMap[key].push(targetCls);
                     }
                     if (!targetCls.students.includes(studentName)) targetCls.students.push(studentName);
@@ -361,7 +367,7 @@
 
                 APP_STATE.classStructure = newMap;
                 await saveStructure(sUrl, tUrl);
-                showToast("명단 동기화 완료!");
+                showToast("명단 동기화 및 주차 분류 완료!");
                 showHome();
             } catch (err) {
                 console.error(err);
@@ -391,15 +397,16 @@
         }
 
         function renderDashboard() {
-            const c = { s6: 0, s7: 0, t: 0, new: 0 };
+            const c = { s6: 0, s7: 0, t: 0, new1: 0, new2: 0 };
             for (const cid in APP_STATE.attendanceDB) {
                 const r = APP_STATE.attendanceDB[cid];
                 for (const n in r) {
                     if (r[n]) {
                         if (n.includes('(교사)') || cid.includes('-teachers')) c.t++;
-                        else if (cid.includes('-새-')) c.new++;
-                        else if (cid.includes('-6-')) c.s6++;
-                        else if (cid.includes('-7-')) c.s7++;
+                        else if (cid.includes('-새친구-1주차')) c.new1++;
+                        else if (cid.includes('-새친구-2주차')) c.new2++;
+                        else if (cid.includes('-6세')) c.s6++;
+                        else if (cid.includes('-7세')) c.s7++;
                     }
                 }
             }
@@ -407,7 +414,8 @@
                 { label: '6세 어린이', color: 'blue', val: c.s6 },
                 { label: '7세 어린이', color: 'green', val: c.s7 },
                 { label: '지원팀 및 교역자', color: 'purple', val: c.t },
-                { label: '새친구들', color: 'amber', val: c.new },
+                { label: '새친구 1주차', color: 'amber', val: c.new1 },
+                { label: '새친구 2주차', color: 'orange', val: c.new2 },
                 { label: '방문자 총합', color: 'slate', val: APP_STATE.stats.visitor }
             ];
             document.getElementById('stat-rows-container').innerHTML = stats.map(s => `
@@ -418,7 +426,8 @@
             `).join('');
 
             const grid = document.getElementById('class-grid-container'); grid.innerHTML = '';
-            ['새친구', '6세', '7세'].forEach(key => {
+            ['새친구 1주차', '새친구 2주차', '6세', '7세'].forEach(key => {
+                if (!APP_STATE.classStructure[key]) return;
                 APP_STATE.classStructure[key].forEach(cls => {
                     const count = Object.values(APP_STATE.attendanceDB[cls.id] || {}).filter(v => v === true).length;
                     const btn = document.createElement('button');
@@ -452,7 +461,14 @@
         function renderAttendance() {
             const cls = APP_STATE.selectedClass; if (!cls) return;
             document.getElementById('targetClassName').innerText = cls.name;
-            document.getElementById('targetClassAge').innerText = cls.id.includes('teachers') ? '사역지원' : (cls.id.includes('-새-') ? '새친구' : cls.id.split('-')[1] + '세');
+            let ageLabel = '일반';
+            if (cls.id.includes('teachers')) ageLabel = '사역지원';
+            else if (cls.id.includes('1주차')) ageLabel = '새친구 1주';
+            else if (cls.id.includes('2주차')) ageLabel = '새친구 2주';
+            else if (cls.id.includes('6세')) ageLabel = '6세';
+            else if (cls.id.includes('7세')) ageLabel = '7세';
+
+            document.getElementById('targetClassAge').innerText = ageLabel;
             document.getElementById('targetClassTeacher').innerText = cls.teacher;
             const cont = document.getElementById('members-list'); cont.innerHTML = '';
             const recs = APP_STATE.attendanceDB[cls.id] || {};
