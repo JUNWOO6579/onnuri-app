@@ -75,7 +75,7 @@
                     
                     <div class="pt-4 border-t border-slate-100">
                         <h3 class="font-bold text-slate-800 ml-1 mb-3 flex items-center gap-2">
-                            <i class="fa-solid fa-user-tie text-indigo-500 text-sm"></i> 교역자 및 미지정 교사
+                            <i class="fa-solid fa-user-tie text-indigo-500 text-sm"></i> 사역 지원팀 및 교역자
                         </h3>
                         <div id="teacher-unassigned-container"></div>
                     </div>
@@ -90,9 +90,9 @@
                                 <p class="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] mb-1">인천온누리 유치2부</p>
                                 <h3 id="targetClassName" class="text-2xl font-black">학급명</h3>
                             </div>
-                            <span id="targetClassAge" class="bg-white/10 px-3 py-1 rounded-full text-[10px] font-black border border-white/10">연령</span>
+                            <span id="targetClassAge" class="bg-white/10 px-3 py-1 rounded-full text-[10px] font-black border border-white/10">구분</span>
                         </div>
-                        <p class="text-sm opacity-60 font-medium" id="targetClassTeacher">교사 정보</p>
+                        <p class="text-sm opacity-60 font-medium" id="targetClassTeacher">정보</p>
                     </div>
                     <i class="fa-solid fa-users absolute -right-6 -bottom-6 text-8xl text-white opacity-5"></i>
                 </div>
@@ -117,7 +117,7 @@
                 <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-6">
                     <div>
                         <h3 class="text-xl font-black mb-1 text-slate-800">구글 시트 연동</h3>
-                        <p class="text-[11px] text-slate-400">데이터가 한글로 정확히 나오도록 개선되었습니다.</p>
+                        <p class="text-[11px] text-slate-400">데이터를 분석하여 사역 지원팀(반 미지정)을 분류합니다.</p>
                     </div>
                     <div class="space-y-4">
                         <div class="space-y-1.5">
@@ -129,7 +129,7 @@
                             <input type="url" id="teacherSheetUrlInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] outline-none" placeholder="Teacher CSV URL">
                         </div>
                         <button onclick="syncAll()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-arrows-rotate"></i> 한글 데이터 복구 및 동기화
+                            <i class="fa-solid fa-arrows-rotate"></i> 필터링 및 명단 동기화
                         </button>
                     </div>
                     <div class="h-px bg-slate-100 my-2"></div>
@@ -137,7 +137,7 @@
                         <i class="fa-solid fa-file-export"></i> 출결 보고서 엑셀 저장
                     </button>
                     <div class="text-center pt-4 border-t border-slate-50">
-                        <p class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Version 11.0 (Teacher Sync Fixed)</p>
+                        <p class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Version 11.7 (Terminology Updated)</p>
                     </div>
                 </div>
             </section>
@@ -249,18 +249,16 @@
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'structure'), payload);
         }
 
-        // --- ENHANCED SCANNER WITH UTF-8 & TEACHER FILTER FIX ---
         window.syncAll = async () => {
             const sUrl = document.getElementById('sheetUrlInput').value.trim();
             const tUrl = document.getElementById('teacherSheetUrlInput').value.trim();
             if (!sUrl) return showToast("학생 명단 URL이 필요합니다.");
 
-            setLoading(true, "한글 데이터를 복구하며 분석 중입니다...");
+            setLoading(true, "교사 필터링 및 명단 분석 중...");
             try {
                 const newMap = { "6세": [], "7세": [], "새친구": [], "teachers": [] };
-                const assignedTeacherNames = new Set(); // 반 배정 교사 중복 제거용
+                const assignedTeacherNames = new Set(); 
 
-                // 1. 학생 명단 처리
                 const sResp = await fetch(sUrl);
                 const sBuf = await sResp.arrayBuffer();
                 const sText = new TextDecoder("utf-8").decode(sBuf);
@@ -286,7 +284,6 @@
                     }
                 }
 
-                // 자동검색 실패 시 수동 강제 매칭 (A열 공백 구조 대비)
                 if (hIdx === -1) { hIdx = 3; colMap.age = 1; colMap.cls = 2; colMap.name = 4; }
 
                 let stickyAge = "", stickyClass = "", stickyTeachers = "미지정";
@@ -305,7 +302,6 @@
                         stickyClass = raw.split(/[\n(]/)[0].trim();
                         const tMatches = raw.match(/\((.*?)\)/g);
                         if (tMatches) {
-                            // '선생님' 글자를 제거하고 이름만 추출하여 Set에 담음
                             const ts = tMatches.map(m => m.replace(/[()]/g, '').replace('선생님', '').trim()).filter(n => n.length >= 2);
                             ts.forEach(t => assignedTeacherNames.add(t));
                             stickyTeachers = ts.join('/');
@@ -324,7 +320,6 @@
                     if (!targetCls.students.includes(studentName)) targetCls.students.push(studentName);
                 }
 
-                // 2. 교사/교역자 명단 처리
                 if (tUrl) {
                     const tResp = await fetch(tUrl);
                     const tBuf = await tResp.arrayBuffer();
@@ -340,21 +335,24 @@
                     if (thIdx !== -1) {
                         const head = tRows[thIdx];
                         const ni = head.findIndex(h => String(h).includes('이름'));
-                        const pi = head.findIndex(h => ["부", "예배", "구분"].some(k => String(h).includes(k)));
+                        const pi = head.findIndex(h => ["부", "예배", "구분", "소속"].some(k => String(h).includes(k)));
 
                         for (let i = thIdx + 1; i < tRows.length; i++) {
                             const r = tRows[i];
                             const tName = r[ni] ? String(r[ni]).trim() : "";
-                            const tPart = pi !== -1 ? String(r[pi]) : "";
-                            
-                            // 2부 교사 또는 교역자 키워드 체크
-                            const isPastors = ["교역자", "전도사", "목사"].some(k => String(r).includes(k));
-                            const is2ndService = tPart.includes('2') || tPart.includes('오후');
+                            if (!tName || tName.length < 2) continue;
 
-                            if (tName && (is2ndService || isPastors)) {
-                                // 반에 배정된 이름은 제외하고 미지정으로 등록
+                            const tPart = pi !== -1 ? String(r[pi]) : "";
+                            const rowText = r.join("|"); 
+                            const is2ndService = tPart.includes('2') || tPart.includes('오후') || rowText.includes('유치2');
+                            const isNoClass = !tPart.includes('반');
+                            const isPastors = ["교역자", "전도사", "목사", "간사"].some(k => rowText.includes(k));
+
+                            if ((is2ndService && isNoClass) || isPastors) {
                                 if (!assignedTeacherNames.has(tName)) {
-                                    if (!newMap.teachers.includes(tName)) newMap.teachers.push(tName);
+                                    if (!newMap.teachers.includes(tName)) {
+                                        newMap.teachers.push(tName);
+                                    }
                                 }
                             }
                         }
@@ -363,7 +361,7 @@
 
                 APP_STATE.classStructure = newMap;
                 await saveStructure(sUrl, tUrl);
-                showToast("한글 복구 및 동기화 완료!");
+                showToast("명단 동기화 완료!");
                 showHome();
             } catch (err) {
                 console.error(err);
@@ -373,7 +371,6 @@
             }
         };
 
-        // --- UI & NAVIGATION ---
         window.showHome = () => { APP_STATE.view = 'dashboard'; renderView(); };
         window.showSettings = () => { APP_STATE.view = 'settings'; renderView(); };
         window.goBack = () => { APP_STATE.view = 'dashboard'; renderView(); };
@@ -409,7 +406,7 @@
             const stats = [
                 { label: '6세 어린이', color: 'blue', val: c.s6 },
                 { label: '7세 어린이', color: 'green', val: c.s7 },
-                { label: '교사 및 교역자', color: 'purple', val: c.t },
+                { label: '지원팀 및 교역자', color: 'purple', val: c.t },
                 { label: '새친구들', color: 'amber', val: c.new },
                 { label: '방문자 총합', color: 'slate', val: APP_STATE.stats.visitor }
             ];
@@ -436,9 +433,9 @@
             document.getElementById('teacher-unassigned-container').innerHTML = `
                 <button onclick='window.openTeachers()' class="w-full p-5 bg-slate-900 text-white rounded-[1.5rem] text-left shadow-lg relative overflow-hidden active:scale-95 transition-all">
                     <div class="relative z-10">
-                        <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Non-Class Group</p>
-                        <p class="font-black text-lg">반 미지정 교사 및 교역자</p>
-                        <p class="text-[10px] opacity-60">등록됨: ${APP_STATE.classStructure.teachers?.length || 0}명</p>
+                        <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Support & Leadership</p>
+                        <p class="font-black text-lg">사역 지원팀 및 교역자</p>
+                        <p class="text-[10px] opacity-60">명단 수: ${APP_STATE.classStructure.teachers?.length || 0}명</p>
                         ${tCount > 0 ? `<div class="mt-2 text-[10px] bg-blue-600 px-3 py-1 rounded-full inline-block font-black">${tCount}명 체크완료</div>` : ''}
                     </div>
                 </button>
@@ -447,7 +444,7 @@
         }
 
         window.openTeachers = () => {
-            APP_STATE.selectedClass = { id: '2nd-t-teachers', name: '반 미지정 교사', teacher: '유치2부 지원팀', students: [] };
+            APP_STATE.selectedClass = { id: '2nd-t-teachers', name: '사역 지원팀', teacher: '유치2부 운영 및 지원', students: [] };
             APP_STATE.view = 'attendance';
             renderView();
         };
@@ -455,10 +452,11 @@
         function renderAttendance() {
             const cls = APP_STATE.selectedClass; if (!cls) return;
             document.getElementById('targetClassName').innerText = cls.name;
-            document.getElementById('targetClassAge').innerText = cls.id.includes('teachers') ? '교사' : (cls.id.includes('-새-') ? '새친구' : cls.id.split('-')[1] + '세');
+            document.getElementById('targetClassAge').innerText = cls.id.includes('teachers') ? '사역지원' : (cls.id.includes('-새-') ? '새친구' : cls.id.split('-')[1] + '세');
             document.getElementById('targetClassTeacher').innerText = cls.teacher;
             const cont = document.getElementById('members-list'); cont.innerHTML = '';
             const recs = APP_STATE.attendanceDB[cls.id] || {};
+            
             const drawRow = (name, isT) => {
                 const isP = recs[name] || false;
                 const row = document.createElement('div');
@@ -474,8 +472,9 @@
                     </div>`;
                 cont.appendChild(row);
             };
+            
             if (cls.id.includes('teachers')) {
-                APP_STATE.classStructure.teachers.forEach(t => drawRow(t, true));
+                (APP_STATE.classStructure.teachers || []).forEach(t => drawRow(t, true));
             } else {
                 cls.teacher.split(/[/,]/).forEach(t => { if(t.trim() && t.trim() !== '미지정') drawRow(`${t.trim()}(교사)`, true); });
                 cls.students.forEach(s => drawRow(s, false));
@@ -506,7 +505,7 @@
                 });
             }
             const tRec = APP_STATE.attendanceDB['2nd-t-teachers'] || {};
-            (s.teachers || []).forEach(t => data.push([date, "2부", "교사(미지정)", "유치부", t, tRec[t] ? "출석" : "결석"]));
+            (s.teachers || []).forEach(t => data.push([date, "2부", "사역지원", "유치부", t, tRec[t] ? "출석" : "결석"]));
             const ws = XLSX.utils.aoa_to_sheet(data);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Attendance");
