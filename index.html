@@ -35,7 +35,7 @@
             <div class="absolute top-0 left-0 w-full h-full border-4 border-blue-100 rounded-full"></div>
             <div class="absolute top-0 left-0 w-full h-full border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
         </div>
-        <p class="mt-4 text-sm font-bold text-slate-500" id="loading-text">명단 데이터를 분석 중입니다...</p>
+        <p class="mt-4 text-sm font-bold text-slate-500" id="loading-text">데이터를 동기화 중입니다...</p>
     </div>
 
     <div id="app" class="max-w-md mx-auto min-h-screen flex flex-col relative bg-white shadow-2xl border-x border-slate-100">
@@ -60,28 +60,27 @@
                     <h2 class="text-xl font-extrabold text-slate-800">전체 현황 <span id="displayDate" class="ml-2 text-xs text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-full"></span></h2>
                 </div>
 
+                <!-- 통계 카드 섹션 -->
                 <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
                     <div class="grid grid-cols-2 bg-slate-50 py-3 px-4 text-[10px] font-black text-slate-400 text-center uppercase tracking-widest border-b border-slate-100">
-                        <div>구분</div><div>2부 실시간 인원</div>
+                        <div>구분</div><div>실시간 인원</div>
                     </div>
                     <div class="divide-y divide-slate-50" id="stat-rows-container"></div>
                 </div>
 
-                <div class="space-y-4">
-                    <h3 class="font-bold text-slate-800 ml-1 flex items-center gap-2">
-                        <i class="fa-solid fa-school text-blue-500 text-sm"></i> 어린이 학급 목록
+                <!-- 학급 버튼 컨테이너 -->
+                <div class="space-y-8" id="class-lists-container"></div>
+                
+                <!-- 사역 지원팀 섹션 -->
+                <div class="pt-4 border-t border-slate-100">
+                    <h3 class="font-bold text-slate-800 ml-1 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-user-tie text-indigo-500 text-sm"></i> 사역 지원팀 및 교역자
                     </h3>
-                    <div id="class-grid-container" class="grid grid-cols-2 gap-3"></div>
-                    
-                    <div class="pt-4 border-t border-slate-100">
-                        <h3 class="font-bold text-slate-800 ml-1 mb-3 flex items-center gap-2">
-                            <i class="fa-solid fa-user-tie text-indigo-500 text-sm"></i> 사역 지원팀 및 교역자
-                        </h3>
-                        <div id="teacher-unassigned-container"></div>
-                    </div>
+                    <div id="teacher-unassigned-container"></div>
                 </div>
             </section>
 
+            <!-- 출결 체크 화면 -->
             <section id="view-attendance" class="hidden space-y-6">
                 <div class="p-6 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-xl">
                     <div class="relative z-10">
@@ -113,11 +112,12 @@
                 </div>
             </section>
 
+            <!-- 설정 화면 -->
             <section id="view-settings" class="hidden space-y-6">
                 <div class="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-6">
                     <div>
                         <h3 class="text-xl font-black mb-1 text-slate-800">구글 시트 연동</h3>
-                        <p class="text-[11px] text-slate-400">데이터를 분석하여 주차별 새친구 및 지원팀을 분류합니다.</p>
+                        <p class="text-[11px] text-slate-400">명단 데이터를 분석하고 새친구 주차를 자동 관리합니다.</p>
                     </div>
                     <div class="space-y-4">
                         <div class="space-y-1.5">
@@ -129,7 +129,7 @@
                             <input type="url" id="teacherSheetUrlInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] outline-none" placeholder="Teacher CSV URL">
                         </div>
                         <button onclick="syncAll()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-arrows-rotate"></i> 새친구 주차별 명단 동기화
+                            <i class="fa-solid fa-arrows-rotate"></i> 시트 동기화 및 주차 초기화
                         </button>
                     </div>
                     <div class="h-px bg-slate-100 my-2"></div>
@@ -137,12 +137,13 @@
                         <i class="fa-solid fa-file-export"></i> 출결 보고서 엑셀 저장
                     </button>
                     <div class="text-center pt-4 border-t border-slate-50">
-                        <p class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Version 11.8 (NewFriends Weekly Stats)</p>
+                        <p class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Version 12.2 (Compact NewFriends Layout)</p>
                     </div>
                 </div>
             </section>
         </main>
 
+        <!-- 네비게이션 -->
         <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/80 backdrop-blur-md border-t border-slate-100 flex justify-around px-6 py-4 z-50">
             <button onclick="showHome()" class="flex flex-col items-center gap-1 text-blue-600" id="nav-home">
                 <i class="fa-solid fa-house-chimney text-xl"></i>
@@ -169,6 +170,7 @@
                 <button onclick="setEntryType('teacher')" id="type-teacher" class="py-2 rounded-xl font-black text-xs text-slate-400">교사</button>
             </div>
             <input type="text" id="entryName" class="w-full p-4 bg-slate-50 rounded-2xl text-center font-bold outline-none" placeholder="성함 입력">
+            <p class="text-[10px] text-center text-slate-400">현재 보고 있는 반에 추가됩니다.</p>
             <div class="flex gap-2">
                 <button onclick="closeEntryModal()" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">취소</button>
                 <button onclick="submitNewMember()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">추가</button>
@@ -179,7 +181,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAlp-PpxgxPBXj0Ek1H-b52GjwiU8KyD5A",
@@ -190,7 +192,7 @@
             appId: "1:89074216999:web:1798e414726b1e4af75e02"
         };
         
-        const appId = 'onnuri-youth-2nd-v11';
+        const appId = 'onnuri-youth-2nd-v12';
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -201,7 +203,8 @@
             attendanceDB: {}, 
             stats: { visitor: 0 }, 
             classStructure: { "6세": [], "7세": [], "새친구 1주차": [], "새친구 2주차": [], "teachers": [] },
-            newEntryType: 'student'
+            newEntryType: 'student',
+            lastPromotionDate: "" 
         };
 
         async function initAuth() {
@@ -215,15 +218,28 @@
             return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         }
 
-        function startSync() {
-            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'structure'), (snap) => {
+        function getSundayKey() {
+            const now = new Date();
+            const day = now.getDay();
+            const diff = now.getDate() - day; 
+            const sun = new Date(now.setDate(diff));
+            return `${sun.getFullYear()}-${String(sun.getMonth() + 1).padStart(2, '0')}-${String(sun.getDate()).padStart(2, '0')}`;
+        }
+
+        async function startSync() {
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'structure'), async (snap) => {
                 if (snap.exists()) {
-                    APP_STATE.classStructure = snap.data().map;
-                    if (snap.data().sheetUrl) document.getElementById('sheetUrlInput').value = snap.data().sheetUrl;
-                    if (snap.data().teacherSheetUrl) document.getElementById('teacherSheetUrlInput').value = snap.data().teacherSheetUrl;
+                    const data = snap.data();
+                    APP_STATE.classStructure = data.map;
+                    APP_STATE.lastPromotionDate = data.lastPromotionDate || "";
+                    if (data.sheetUrl) document.getElementById('sheetUrlInput').value = data.sheetUrl;
+                    if (data.teacherSheetUrl) document.getElementById('teacherSheetUrlInput').value = data.teacherSheetUrl;
+
+                    await checkWeeklyPromotion();
                 }
                 updateUI();
             });
+
             onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'daily_records', getDateKey()), (snap) => {
                 if (snap.exists()) {
                     const d = snap.data();
@@ -232,6 +248,35 @@
                 }
                 updateUI();
             });
+        }
+
+        async function checkWeeklyPromotion() {
+            const currentSunday = getSundayKey();
+            if (APP_STATE.lastPromotionDate !== currentSunday) {
+                const structure = APP_STATE.classStructure;
+                const week1 = structure["새친구 1주차"] || [];
+                const week2 = structure["새친구 2주차"] || [];
+
+                let targetWeek2Cls = week2[0];
+                if (!targetWeek2Cls) {
+                   targetWeek2Cls = { id: '2nd-새친구-2주차-기본', name: '새친구 2주차', teacher: '미지정', students: [] };
+                   if(!structure["새친구 2주차"]) structure["새친구 2주차"] = [];
+                   structure["새친구 2주차"].push(targetWeek2Cls);
+                }
+
+                week1.forEach(cls => {
+                    cls.students.forEach(st => {
+                        if (!targetWeek2Cls.students.includes(st)) {
+                            targetWeek2Cls.students.push(st);
+                        }
+                    });
+                    cls.students = []; 
+                });
+
+                APP_STATE.lastPromotionDate = currentSunday;
+                await saveStructure();
+                showToast("새 주일이 되어 새친구 주차가 자동 갱신되었습니다.");
+            }
         }
 
         async function saveAttendance() {
@@ -243,7 +288,10 @@
         }
 
         async function saveStructure(sUrl = "", tUrl = "") {
-            const payload = { map: APP_STATE.classStructure };
+            const payload = { 
+                map: APP_STATE.classStructure, 
+                lastPromotionDate: APP_STATE.lastPromotionDate 
+            };
             if (sUrl) payload.sheetUrl = sUrl;
             if (tUrl) payload.teacherSheetUrl = tUrl;
             await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'structure'), payload);
@@ -254,10 +302,15 @@
             const tUrl = document.getElementById('teacherSheetUrlInput').value.trim();
             if (!sUrl) return showToast("학생 명단 URL이 필요합니다.");
 
-            setLoading(true, "새친구 주차별 분류 및 명단 분석 중...");
+            setLoading(true, "데이터 분석 중...");
             try {
-                // 구조 초기화 (새친구 1/2주차 분리)
-                const newMap = { "6세": [], "7세": [], "새친구 1주차": [], "새친구 2주차": [], "teachers": [] };
+                const newMap = { 
+                    "6세": [], 
+                    "7세": [], 
+                    "새친구 1주차": APP_STATE.classStructure["새친구 1주차"] || [], 
+                    "새친구 2주차": APP_STATE.classStructure["새친구 2주차"] || [], 
+                    "teachers": [] 
+                };
                 const assignedTeacherNames = new Set(); 
 
                 const sResp = await fetch(sUrl);
@@ -293,7 +346,7 @@
                     const row = sRows[i];
                     if (!row) continue;
                     const studentName = row[colMap.name] ? String(row[colMap.name]).trim() : "";
-                    if (!studentName || studentName === "이름" || studentName.includes("총원") || studentName.length < 2) continue;
+                    if (!studentName || studentName.length < 2) continue;
 
                     if (row[colMap.age] && String(row[colMap.age]).trim() !== "") {
                         stickyAge = String(row[colMap.age]).replace(/[^0-9]/g, "") + "세";
@@ -309,21 +362,30 @@
                         } else { stickyTeachers = "미지정"; }
                     }
 
-                    let key = stickyAge;
                     if (stickyClass.includes('새친구')) {
-                        if (stickyClass.includes('1주')) key = "새친구 1주차";
-                        else if (stickyClass.includes('2주')) key = "새친구 2주차";
-                        else key = "새친구 1주차"; // 기본값
-                    }
-                    
-                    if (!newMap[key]) continue;
+                        let found = false;
+                        [...newMap["새친구 1주차"], ...newMap["새친구 2주차"]].forEach(c => {
+                            if (c.students.includes(studentName)) found = true;
+                        });
 
-                    let targetCls = newMap[key].find(c => c.name === stickyClass);
-                    if (!targetCls) {
-                        targetCls = { id: `2nd-${key.replace(/ /g, '-')}-${stickyClass}`, name: stickyClass, teacher: stickyTeachers, students: [] };
-                        newMap[key].push(targetCls);
+                        if (!found) {
+                            let week1Cls = newMap["새친구 1주차"].find(c => c.name.includes("1주차"));
+                            if (!week1Cls) {
+                                week1Cls = { id: '2nd-새친구-1주차-기본', name: '새친구 1주차', teacher: '미지정', students: [] };
+                                newMap["새친구 1주차"].push(week1Cls);
+                            }
+                            week1Cls.students.push(studentName);
+                        }
+                    } else {
+                        const key = stickyAge;
+                        if (!newMap[key]) continue;
+                        let targetCls = newMap[key].find(c => c.name === stickyClass);
+                        if (!targetCls) {
+                            targetCls = { id: `2nd-${key}-${stickyClass}`, name: stickyClass, teacher: stickyTeachers, students: [] };
+                            newMap[key].push(targetCls);
+                        }
+                        if (!targetCls.students.includes(studentName)) targetCls.students.push(studentName);
                     }
-                    if (!targetCls.students.includes(studentName)) targetCls.students.push(studentName);
                 }
 
                 if (tUrl) {
@@ -332,33 +394,17 @@
                     const tText = new TextDecoder("utf-8").decode(tBuf);
                     const tWb = XLSX.read(tText, { type: 'string' });
                     const tRows = XLSX.utils.sheet_to_json(tWb.Sheets[tWb.SheetNames[0]], { header: 1, defval: "" });
-                    
                     let thIdx = -1;
                     for(let i=0; i<Math.min(tRows.length, 30); i++) {
                         if (tRows[i].some(c => String(c).includes('이름'))) { thIdx = i; break; }
                     }
-
                     if (thIdx !== -1) {
-                        const head = tRows[thIdx];
-                        const ni = head.findIndex(h => String(h).includes('이름'));
-                        const pi = head.findIndex(h => ["부", "예배", "구분", "소속"].some(k => String(h).includes(k)));
-
+                        const head = tRows[thIdx], ni = head.findIndex(h => String(h).includes('이름')), pi = head.findIndex(h => ["부", "예배", "구분"].some(k => String(h).includes(k)));
                         for (let i = thIdx + 1; i < tRows.length; i++) {
-                            const r = tRows[i];
-                            const tName = r[ni] ? String(r[ni]).trim() : "";
-                            if (!tName || tName.length < 2) continue;
-
-                            const tPart = pi !== -1 ? String(r[pi]) : "";
-                            const rowText = r.join("|"); 
-                            const is2ndService = tPart.includes('2') || tPart.includes('오후') || rowText.includes('유치2');
-                            const isNoClass = !tPart.includes('반');
-                            const isPastors = ["교역자", "전도사", "목사", "간사"].some(k => rowText.includes(k));
-
-                            if ((is2ndService && isNoClass) || isPastors) {
+                            const r = tRows[i], tName = r[ni] ? String(r[ni]).trim() : "", tPart = pi !== -1 ? String(r[pi]) : "", rowText = r.join("|");
+                            if (tName && (tPart.includes('2') || rowText.includes('유치2') || ["교역자", "전도사", "목사"].some(k => rowText.includes(k)))) {
                                 if (!assignedTeacherNames.has(tName)) {
-                                    if (!newMap.teachers.includes(tName)) {
-                                        newMap.teachers.push(tName);
-                                    }
+                                    if (!newMap.teachers.includes(tName)) newMap.teachers.push(tName);
                                 }
                             }
                         }
@@ -367,10 +413,9 @@
 
                 APP_STATE.classStructure = newMap;
                 await saveStructure(sUrl, tUrl);
-                showToast("명단 동기화 및 주차 분류 완료!");
+                showToast("동기화 완료! 새친구 현황을 확인하세요.");
                 showHome();
             } catch (err) {
-                console.error(err);
                 showToast("분석 실패: " + err.message);
             } finally {
                 setLoading(false);
@@ -403,10 +448,10 @@
                 for (const n in r) {
                     if (r[n]) {
                         if (n.includes('(교사)') || cid.includes('-teachers')) c.t++;
-                        else if (cid.includes('-새친구-1주차')) c.new1++;
-                        else if (cid.includes('-새친구-2주차')) c.new2++;
-                        else if (cid.includes('-6세')) c.s6++;
-                        else if (cid.includes('-7세')) c.s7++;
+                        else if (cid.includes('1주차')) c.new1++;
+                        else if (cid.includes('2주차')) c.new2++;
+                        else if (cid.includes('6세')) c.s6++;
+                        else if (cid.includes('7세')) c.s7++;
                     }
                 }
             }
@@ -425,17 +470,69 @@
                 </div>
             `).join('');
 
-            const grid = document.getElementById('class-grid-container'); grid.innerHTML = '';
-            ['새친구 1주차', '새친구 2주차', '6세', '7세'].forEach(key => {
-                if (!APP_STATE.classStructure[key]) return;
-                APP_STATE.classStructure[key].forEach(cls => {
+            const classContainer = document.getElementById('class-lists-container'); 
+            classContainer.innerHTML = '';
+            
+            // 1. 새친구 섹션 (1주차, 2주차를 한 줄에 모음)
+            const nfSection = document.createElement('div');
+            nfSection.className = "space-y-3";
+            nfSection.innerHTML = `
+                <h3 class="font-bold text-slate-800 ml-1 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-500 text-sm"></i> 새친구 현황
+                </h3>
+                <div class="grid grid-cols-2 gap-3" id="newfriends-buttons-grid"></div>
+            `;
+            classContainer.appendChild(nfSection);
+            const nfGrid = nfSection.querySelector('#newfriends-buttons-grid');
+            
+            ['새친구 1주차', '새친구 2주차'].forEach(key => {
+                let classes = APP_STATE.classStructure[key] || [];
+                if (classes.length === 0) {
+                    const defId = `2nd-${key.replace(/ /g, '-')}-기본`;
+                    classes = [{ id: defId, name: key, teacher: '미지정', students: [] }];
+                }
+                classes.forEach(cls => {
                     const count = Object.values(APP_STATE.attendanceDB[cls.id] || {}).filter(v => v === true).length;
                     const btn = document.createElement('button');
+                    btn.onclick = () => selectClassById(cls.id, key);
                     btn.className = "p-5 bg-white border border-slate-100 rounded-[1.5rem] text-left shadow-sm active:scale-95 transition-all";
-                    btn.onclick = () => { APP_STATE.selectedClass = cls; APP_STATE.view = 'attendance'; renderView(); };
-                    btn.innerHTML = `<p class="font-black text-slate-800">${cls.name}</p><p class="text-[10px] text-slate-400 truncate">${cls.teacher}</p>${count > 0 ? `<div class="mt-2 text-[9px] text-blue-600 font-black bg-blue-50 px-2 py-0.5 rounded-full inline-block">${count}명 출석</div>` : ''}`;
-                    grid.appendChild(btn);
+                    btn.innerHTML = `
+                        <p class="font-black text-slate-800">${cls.name}</p>
+                        <p class="text-[10px] text-slate-400 truncate">주차별 자동관리</p>
+                        ${count > 0 ? `<div class="mt-2 text-[9px] text-blue-600 font-black bg-blue-50 px-2 py-0.5 rounded-full inline-block">${count}명 출석</div>` : ''}
+                    `;
+                    nfGrid.appendChild(btn);
                 });
+            });
+
+            // 2. 연령별 섹션 (기존 레이아웃 유지)
+            [
+                { key: '6세', icon: 'fa-child', color: 'text-blue-500' },
+                { key: '7세', icon: 'fa-graduation-cap', color: 'text-green-500' }
+            ].forEach(group => {
+                const classes = APP_STATE.classStructure[group.key] || [];
+                if (classes.length === 0) return;
+
+                const section = document.createElement('div');
+                section.className = "space-y-3";
+                section.innerHTML = `
+                    <h3 class="font-bold text-slate-800 ml-1 flex items-center gap-2">
+                        <i class="fa-solid ${group.icon} ${group.color} text-sm"></i> ${group.key} 학급
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        ${classes.map(cls => {
+                            const count = Object.values(APP_STATE.attendanceDB[cls.id] || {}).filter(v => v === true).length;
+                            return `
+                                <button onclick="selectClassById('${cls.id}', '${group.key}')" class="p-5 bg-white border border-slate-100 rounded-[1.5rem] text-left shadow-sm active:scale-95 transition-all">
+                                    <p class="font-black text-slate-800">${cls.name}</p>
+                                    <p class="text-[10px] text-slate-400 truncate">${cls.teacher}</p>
+                                    ${count > 0 ? `<div class="mt-2 text-[9px] text-blue-600 font-black bg-blue-50 px-2 py-0.5 rounded-full inline-block">${count}명 출석</div>` : ''}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                classContainer.appendChild(section);
             });
 
             const tCount = Object.values(APP_STATE.attendanceDB['2nd-t-teachers'] || {}).filter(v => v === true).length;
@@ -452,48 +549,37 @@
             document.getElementById('displayDate').innerText = `${new Date().getMonth()+1}/${new Date().getDate()}`;
         }
 
+        window.selectClassById = (id, groupKey) => {
+            const cls = APP_STATE.classStructure[groupKey].find(c => c.id === id);
+            if (cls) { APP_STATE.selectedClass = cls; APP_STATE.view = 'attendance'; renderView(); }
+        };
+
         window.openTeachers = () => {
             APP_STATE.selectedClass = { id: '2nd-t-teachers', name: '사역 지원팀', teacher: '유치2부 운영 및 지원', students: [] };
-            APP_STATE.view = 'attendance';
-            renderView();
+            APP_STATE.view = 'attendance'; renderView();
         };
 
         function renderAttendance() {
             const cls = APP_STATE.selectedClass; if (!cls) return;
             document.getElementById('targetClassName').innerText = cls.name;
-            let ageLabel = '일반';
-            if (cls.id.includes('teachers')) ageLabel = '사역지원';
-            else if (cls.id.includes('1주차')) ageLabel = '새친구 1주';
-            else if (cls.id.includes('2주차')) ageLabel = '새친구 2주';
-            else if (cls.id.includes('6세')) ageLabel = '6세';
-            else if (cls.id.includes('7세')) ageLabel = '7세';
-
+            let ageLabel = cls.id.includes('teachers') ? '사역지원' : (cls.id.includes('1주차') ? '새친구 1주' : (cls.id.includes('2주차') ? '새친구 2주' : (cls.id.includes('6세') ? '6세' : '7세')));
             document.getElementById('targetClassAge').innerText = ageLabel;
             document.getElementById('targetClassTeacher').innerText = cls.teacher;
             const cont = document.getElementById('members-list'); cont.innerHTML = '';
             const recs = APP_STATE.attendanceDB[cls.id] || {};
-            
             const drawRow = (name, isT) => {
                 const isP = recs[name] || false;
                 const row = document.createElement('div');
                 row.className = `flex items-center justify-between p-4 rounded-3xl border ${isP ? 'bg-blue-50 border-blue-200' : 'bg-white border-slate-100'}`;
-                row.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <span class="font-extrabold ${isP ? 'text-blue-900' : 'text-slate-700'}">${name.split('(')[0]}</span>
-                        ${isT ? '<span class="text-[8px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-black">T</span>' : ''}
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="setStatus('${cls.id}', '${name}', true)" class="w-12 py-2 rounded-xl text-xs font-black ${isP ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">출석</button>
-                        <button onclick="setStatus('${cls.id}', '${name}', false)" class="w-12 py-2 rounded-xl text-xs font-black ${!isP && recs.hasOwnProperty(name) ? 'bg-slate-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">결석</button>
-                    </div>`;
+                row.innerHTML = `<div class="flex items-center gap-3"><span class="font-extrabold ${isP ? 'text-blue-900' : 'text-slate-700'}">${name.split('(')[0]}</span>${isT ? '<span class="text-[8px] bg-purple-600 text-white px-1.5 py-0.5 rounded font-black">T</span>' : ''}</div><div class="flex gap-2"><button onclick="setStatus('${cls.id}', '${name}', true)" class="w-12 py-2 rounded-xl text-xs font-black ${isP ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">출석</button><button onclick="setStatus('${cls.id}', '${name}', false)" class="w-12 py-2 rounded-xl text-xs font-black ${!isP && recs.hasOwnProperty(name) ? 'bg-slate-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400'}">결석</button></div>`;
                 cont.appendChild(row);
             };
-            
-            if (cls.id.includes('teachers')) {
-                (APP_STATE.classStructure.teachers || []).forEach(t => drawRow(t, true));
-            } else {
-                cls.teacher.split(/[/,]/).forEach(t => { if(t.trim() && t.trim() !== '미지정') drawRow(`${t.trim()}(교사)`, true); });
-                cls.students.forEach(s => drawRow(s, false));
+            if (cls.id.includes('teachers')) { (APP_STATE.classStructure.teachers || []).forEach(t => drawRow(t, true)); } 
+            else { 
+                if (cls.teacher !== '미지정') {
+                    cls.teacher.split(/[/,]/).forEach(t => { if(t.trim()) drawRow(`${t.trim()}(교사)`, true); }); 
+                }
+                cls.students.forEach(s => drawRow(s, false)); 
             }
         }
 
@@ -509,27 +595,26 @@
         };
 
         window.exportExcel = () => {
-            const date = getDateKey();
-            const data = [["날짜", "부서", "구분", "반", "이름", "출석여부"]];
-            const s = APP_STATE.classStructure;
+            const date = getDateKey(), data = [["날짜", "부서", "구분", "반", "이름", "출석여부"]], s = APP_STATE.classStructure;
             for (const g in s) {
                 if (g === 'teachers') continue;
                 s[g].forEach(cls => {
                     const rec = APP_STATE.attendanceDB[cls.id] || {};
-                    cls.teacher.split(/[/,]/).forEach(t => { if(t.trim()) data.push([date, "2부", "교사(반)", cls.name, t.trim(), rec[`${t.trim()}(교사)`] ? "출석" : "결석"]); });
+                    if (cls.teacher !== '미지정') {
+                        cls.teacher.split(/[/,]/).forEach(t => { if(t.trim()) data.push([date, "2부", "교사(반)", cls.name, t.trim(), rec[`${t.trim()}(교사)`] ? "출석" : "결석"]); });
+                    }
                     cls.students.forEach(st => data.push([date, "2부", "학생", cls.name, st, rec[st] ? "출석" : "결석"]));
                 });
             }
             const tRec = APP_STATE.attendanceDB['2nd-t-teachers'] || {};
             (s.teachers || []).forEach(t => data.push([date, "2부", "사역지원", "유치부", t, tRec[t] ? "출석" : "결석"]));
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data), wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Attendance");
             XLSX.writeFile(wb, `Youth_2nd_${date}.xlsx`);
         };
 
         window.resetTodayData = () => {
-            if(confirm("정말로 오늘 기록을 초기화할까요? (명단은 유지됩니다)")) {
+            if(confirm("정말로 오늘 기록을 초기화할까요?")) {
                 APP_STATE.attendanceDB = {}; APP_STATE.stats = { visitor: 0 };
                 saveAttendance(); showHome(); showToast("초기화 완료");
             }
@@ -546,23 +631,26 @@
         window.submitNewMember = async () => {
             const name = document.getElementById('entryName').value.trim();
             if(!name) return;
-            const cls = APP_STATE.selectedClass;
+            const cls = APP_STATE.selectedClass; if (!cls) return;
             if (cls.id.includes('teachers')) {
                 if (!APP_STATE.classStructure.teachers.includes(name)) APP_STATE.classStructure.teachers.push(name);
             } else {
-                for (const age in APP_STATE.classStructure) {
-                    const group = APP_STATE.classStructure[age];
+                for (const groupKey in APP_STATE.classStructure) {
+                    const group = APP_STATE.classStructure[groupKey];
                     if (Array.isArray(group)) {
                         const target = group.find(c => c.id === cls.id);
                         if (target) {
-                            if (APP_STATE.newEntryType === 'student') target.students.push(name);
-                            else target.teacher += (target.teacher === '미지정' ? '' : ',') + name;
+                            if (APP_STATE.newEntryType === 'student') { if (!target.students.includes(name)) target.students.push(name); } 
+                            else { 
+                                if (target.teacher === '미지정') target.teacher = name;
+                                else target.teacher += ',' + name;
+                            }
                             break;
                         }
                     }
                 }
             }
-            await saveStructure(); renderAttendance(); closeEntryModal(); showToast("추가됨");
+            await saveStructure(); renderAttendance(); closeEntryModal(); showToast("추가되었습니다.");
         };
 
         function setLoading(s, t = "") {
